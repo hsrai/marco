@@ -1,0 +1,303 @@
+services:
+  backend:
+    image: 'frappe/erpnext:v15.38.4'
+    deploy:
+      restart_policy:
+        condition: on-failure
+    volumes:
+      - 'as0swgowckg0cs8w0ocwwsws-sites:/home/frappe/frappe-bench/sites'
+      - 'as0swgowckg0cs8w0ocwwsws-logs:/home/frappe/frappe-bench/logs'
+    networks:
+      as0swgowckg0cs8w0ocwwsws: null
+    labels:
+      - coolify.managed=true
+      - coolify.version=4.0.0-beta.360
+      - coolify.applicationId=39
+      - coolify.type=application
+      - coolify.name=backend-as0swgowckg0cs8w0ocwwsws
+      - coolify.pullRequestId=0
+    restart: unless-stopped
+    container_name: backend-as0swgowckg0cs8w0ocwwsws
+  configurator:
+    image: 'frappe/erpnext:v15.38.4'
+    deploy:
+      restart_policy:
+        condition: none
+    entrypoint:
+      - bash
+      - '-c'
+    command:
+      - "ls -1 apps > sites/apps.txt; bench set-config -g db_host $$DB_HOST; bench set-config -gp db_port $$DB_PORT; bench set-config -g redis_cache \"redis://$$REDIS_CACHE\"; bench set-config -g redis_queue \"redis://$$REDIS_QUEUE\"; bench set-config -g redis_socketio \"redis://$$REDIS_QUEUE\"; bench set-config -gp socketio_port $$SOCKETIO_PORT; bench set-config -g developer_mode 1; bench set-config -g server_script_enabled 1;\n"
+    environment:
+      APPS_JSON_BASE64: WwogICAgewogICAgICAidXJsIjogImh0dHBzOi8vZ2l0aHViLmNvbS9mcmFwcGUvcGF5bWVudHMiLCAKICAgICAgImJyYW5jaCI6ICJ2ZXJzaW9uLTE1IgogICAgfSwKICAgIHsKICAgICAgInVybCI6ICJodHRwczovL2dpdGh1Yi5jb20vZnJhcHBlL3dpa2kiLCAKICAgICAgImJyYW5jaCI6ICJtYXN0ZXIiCiAgICB9LAogICAgewogICAgICAidXJsIjogImh0dHBzOi8vZ2l0aHViLmNvbS9mcmFwcGUvdHdpbGlvLWludGVncmF0aW9uIiwgCiAgICAgICJicmFuY2giOiAibWFzdGVyIgogICAgfSwKICAgIHsKICAgICAgInVybCI6ICJodHRwczovL2dpdGh1Yi5jb20vZnJhcHBlL2RyaXZlIiwgCiAgICAgICJicmFuY2giOiAiZGV2ZWxvcCIKICAgIH0sCiAgICB7CiAgICAgICJ1cmwiOiAiaHR0cHM6Ly9naXRodWIuY29tL1RoZS1Db21taXQtQ29tcGFueS9yYXZlbiIsIAogICAgICAiYnJhbmNoIjogImRldmVsb3AiCiAgICB9LAogICAgewogICAgICAidXJsIjogImh0dHBzOi8vZ2l0aHViLmNvbS9mcmFwcGUvaGVscGRlc2siLCAKICAgICAgImJyYW5jaCI6ICJkZXZlbG9wIgogICAgfQpd
+      DB_HOST: db
+      DB_PORT: '3306'
+      REDIS_CACHE: 'redis-cache:6379'
+      REDIS_QUEUE: 'redis-queue:6379'
+      SOCKETIO_PORT: '9000'
+    volumes:
+      - 'as0swgowckg0cs8w0ocwwsws-sites:/home/frappe/frappe-bench/sites'
+      - 'as0swgowckg0cs8w0ocwwsws-logs:/home/frappe/frappe-bench/logs'
+    networks:
+      as0swgowckg0cs8w0ocwwsws: null
+    labels:
+      - coolify.managed=true
+      - coolify.version=4.0.0-beta.360
+      - coolify.applicationId=39
+      - coolify.type=application
+      - coolify.name=configurator-as0swgowckg0cs8w0ocwwsws
+      - coolify.pullRequestId=0
+    restart: unless-stopped
+    container_name: configurator-as0swgowckg0cs8w0ocwwsws
+  create-site:
+    image: 'frappe/erpnext:v15.38.4'
+    deploy:
+      restart_policy:
+        condition: none
+    volumes:
+      - 'as0swgowckg0cs8w0ocwwsws-sites:/home/frappe/frappe-bench/sites'
+      - 'as0swgowckg0cs8w0ocwwsws-logs:/home/frappe/frappe-bench/logs'
+    entrypoint:
+      - bash
+      - '-c'
+    command:
+      - "wait-for-it -t 120 db:3306; wait-for-it -t 120 redis-cache:6379; wait-for-it -t 120 redis-queue:6379; export start=`date +%s`; until [[ -n `grep -hs ^ sites/common_site_config.json | jq -r \".db_host // empty\"` ]] && \\\n  [[ -n `grep -hs ^ sites/common_site_config.json | jq -r \".redis_cache // empty\"` ]] && \\\n  [[ -n `grep -hs ^ sites/common_site_config.json | jq -r \".redis_queue // empty\"` ]];\ndo\n  echo \"Waiting for sites/common_site_config.json to be created\";\n  sleep 5;\n  if (( `date +%s`-start > 120 )); then\n    echo \"could not find sites/common_site_config.json with required keys\";\n    exit 1\n  fi\ndone; echo \"sites/common_site_config.json found\"; bench new-site --no-mariadb-socket --admin-password=admin --db-root-password=admin --install-app erpnext --set-default frontend;\n"
+    networks:
+      as0swgowckg0cs8w0ocwwsws: null
+    labels:
+      - coolify.managed=true
+      - coolify.version=4.0.0-beta.360
+      - coolify.applicationId=39
+      - coolify.type=application
+      - coolify.name=create-site-as0swgowckg0cs8w0ocwwsws
+      - coolify.pullRequestId=0
+    restart: unless-stopped
+    container_name: create-site-as0swgowckg0cs8w0ocwwsws
+  db:
+    image: 'mariadb:10.6'
+    healthcheck:
+      test: 'mysqladmin ping -h localhost --password=admin'
+      interval: 1s
+      retries: 20
+    deploy:
+      restart_policy:
+        condition: on-failure
+    command:
+      - '--character-set-server=utf8mb4'
+      - '--collation-server=utf8mb4_unicode_ci'
+      - '--skip-character-set-client-handshake'
+      - '--skip-innodb-read-only-compressed'
+    environment:
+      MYSQL_ROOT_PASSWORD: admin
+    volumes:
+      - 'as0swgowckg0cs8w0ocwwsws-db-data:/var/lib/mysql'
+    networks:
+      as0swgowckg0cs8w0ocwwsws: null
+    labels:
+      - coolify.managed=true
+      - coolify.version=4.0.0-beta.360
+      - coolify.applicationId=39
+      - coolify.type=application
+      - coolify.name=db-as0swgowckg0cs8w0ocwwsws
+      - coolify.pullRequestId=0
+    restart: unless-stopped
+    container_name: db-as0swgowckg0cs8w0ocwwsws
+  frontend:
+    image: 'frappe/erpnext:v15.38.4'
+    depends_on:
+      - websocket
+    deploy:
+      restart_policy:
+        condition: on-failure
+    command:
+      - nginx-entrypoint.sh
+    environment:
+      BACKEND: 'backend:8000'
+      FRAPPE_SITE_NAME_HEADER: frontend
+      SOCKETIO: 'websocket:9000'
+      UPSTREAM_REAL_IP_ADDRESS: 127.0.0.1
+      UPSTREAM_REAL_IP_HEADER: X-Forwarded-For
+      UPSTREAM_REAL_IP_RECURSIVE: 'off'
+      PROXY_READ_TIMEOUT: 120
+      CLIENT_MAX_BODY_SIZE: 50m
+    volumes:
+      - 'as0swgowckg0cs8w0ocwwsws-sites:/home/frappe/frappe-bench/sites'
+      - 'as0swgowckg0cs8w0ocwwsws-logs:/home/frappe/frappe-bench/logs'
+    networks:
+      as0swgowckg0cs8w0ocwwsws: null
+    labels:
+      - traefik.enable=true
+      - traefik.http.middlewares.gzip.compress=true
+      - traefik.http.middlewares.redirect-to-https.redirectscheme.scheme=https
+      - traefik.http.routers.http-0-hc00gg0004ggg8w8g4w4cc84.entryPoints=http
+      - traefik.http.routers.http-0-hc00gg0004ggg8w8g4w4cc84.middlewares=redirect-to-https
+      - 'traefik.http.routers.http-0-hc00gg0004ggg8w8g4w4cc84.rule=Host(`ikwc.aes-studio.com`) && PathPrefix(`/`)'
+      - traefik.http.routers.http-0-hc00gg0004ggg8w8g4w4cc84.service=http-0-hc00gg0004ggg8w8g4w4cc84
+      - traefik.http.routers.https-0-hc00gg0004ggg8w8g4w4cc84.entryPoints=https
+      - traefik.http.routers.https-0-hc00gg0004ggg8w8g4w4cc84.middlewares=gzip
+      - 'traefik.http.routers.https-0-hc00gg0004ggg8w8g4w4cc84.rule=Host(`ikwc.aes-studio.com`) && PathPrefix(`/`)'
+      - traefik.http.routers.https-0-hc00gg0004ggg8w8g4w4cc84.service=https-0-hc00gg0004ggg8w8g4w4cc84
+      - traefik.http.routers.https-0-hc00gg0004ggg8w8g4w4cc84.tls.certresolver=letsencrypt
+      - traefik.http.routers.https-0-hc00gg0004ggg8w8g4w4cc84.tls=true
+      - traefik.http.services.http-0-hc00gg0004ggg8w8g4w4cc84.loadbalancer.server.port=8080
+      - traefik.http.services.https-0-hc00gg0004ggg8w8g4w4cc84.loadbalancer.server.port=8080
+      - 'caddy_0.encode=zstd gzip'
+      - 'caddy_0.handle_path.0_reverse_proxy={{upstreams 8080}}'
+      - 'caddy_0.handle_path=/*'
+      - caddy_0.header=-Server
+      - 'caddy_0.try_files={path} /index.html /index.php'
+      - 'caddy_0=https://ikwc.aes-studio.com'
+      - caddy_ingress_network=as0swgowckg0cs8w0ocwwsws
+      - coolify.managed=true
+      - coolify.version=4.0.0-beta.360
+      - coolify.applicationId=39
+      - coolify.type=application
+      - coolify.name=frontend-as0swgowckg0cs8w0ocwwsws
+      - coolify.pullRequestId=0
+    restart: unless-stopped
+    container_name: frontend-as0swgowckg0cs8w0ocwwsws
+  queue-long:
+    image: 'frappe/erpnext:v15.38.4'
+    deploy:
+      restart_policy:
+        condition: on-failure
+    command:
+      - bench
+      - worker
+      - '--queue'
+      - 'long,default,short'
+    volumes:
+      - 'as0swgowckg0cs8w0ocwwsws-sites:/home/frappe/frappe-bench/sites'
+      - 'as0swgowckg0cs8w0ocwwsws-logs:/home/frappe/frappe-bench/logs'
+    networks:
+      as0swgowckg0cs8w0ocwwsws: null
+    labels:
+      - coolify.managed=true
+      - coolify.version=4.0.0-beta.360
+      - coolify.applicationId=39
+      - coolify.type=application
+      - coolify.name=queue-long-as0swgowckg0cs8w0ocwwsws
+      - coolify.pullRequestId=0
+    restart: unless-stopped
+    container_name: queue-long-as0swgowckg0cs8w0ocwwsws
+  queue-short:
+    image: 'frappe/erpnext:v15.38.4'
+    deploy:
+      restart_policy:
+        condition: on-failure
+    command:
+      - bench
+      - worker
+      - '--queue'
+      - 'short,default'
+    volumes:
+      - 'as0swgowckg0cs8w0ocwwsws-sites:/home/frappe/frappe-bench/sites'
+      - 'as0swgowckg0cs8w0ocwwsws-logs:/home/frappe/frappe-bench/logs'
+    networks:
+      as0swgowckg0cs8w0ocwwsws: null
+    labels:
+      - coolify.managed=true
+      - coolify.version=4.0.0-beta.360
+      - coolify.applicationId=39
+      - coolify.type=application
+      - coolify.name=queue-short-as0swgowckg0cs8w0ocwwsws
+      - coolify.pullRequestId=0
+    restart: unless-stopped
+    container_name: queue-short-as0swgowckg0cs8w0ocwwsws
+  redis-queue:
+    image: 'redis:6.2-alpine'
+    deploy:
+      restart_policy:
+        condition: on-failure
+    volumes:
+      - 'as0swgowckg0cs8w0ocwwsws-redis-queue-data:/data'
+    networks:
+      as0swgowckg0cs8w0ocwwsws: null
+    labels:
+      - coolify.managed=true
+      - coolify.version=4.0.0-beta.360
+      - coolify.applicationId=39
+      - coolify.type=application
+      - coolify.name=redis-queue-as0swgowckg0cs8w0ocwwsws
+      - coolify.pullRequestId=0
+    restart: unless-stopped
+    container_name: redis-queue-as0swgowckg0cs8w0ocwwsws
+  redis-cache:
+    image: 'redis:6.2-alpine'
+    deploy:
+      restart_policy:
+        condition: on-failure
+    volumes:
+      - 'as0swgowckg0cs8w0ocwwsws-redis-cache-data:/data'
+    networks:
+      as0swgowckg0cs8w0ocwwsws: null
+    labels:
+      - coolify.managed=true
+      - coolify.version=4.0.0-beta.360
+      - coolify.applicationId=39
+      - coolify.type=application
+      - coolify.name=redis-cache-as0swgowckg0cs8w0ocwwsws
+      - coolify.pullRequestId=0
+    restart: unless-stopped
+    container_name: redis-cache-as0swgowckg0cs8w0ocwwsws
+  scheduler:
+    image: 'frappe/erpnext:v15.38.4'
+    deploy:
+      restart_policy:
+        condition: on-failure
+    command:
+      - bench
+      - schedule
+    volumes:
+      - 'as0swgowckg0cs8w0ocwwsws-sites:/home/frappe/frappe-bench/sites'
+      - 'as0swgowckg0cs8w0ocwwsws-logs:/home/frappe/frappe-bench/logs'
+    networks:
+      as0swgowckg0cs8w0ocwwsws: null
+    labels:
+      - coolify.managed=true
+      - coolify.version=4.0.0-beta.360
+      - coolify.applicationId=39
+      - coolify.type=application
+      - coolify.name=scheduler-as0swgowckg0cs8w0ocwwsws
+      - coolify.pullRequestId=0
+    restart: unless-stopped
+    container_name: scheduler-as0swgowckg0cs8w0ocwwsws
+  websocket:
+    image: 'frappe/erpnext:v15.38.4'
+    deploy:
+      restart_policy:
+        condition: on-failure
+    command:
+      - node
+      - /home/frappe/frappe-bench/apps/frappe/socketio.js
+    volumes:
+      - 'as0swgowckg0cs8w0ocwwsws-sites:/home/frappe/frappe-bench/sites'
+      - 'as0swgowckg0cs8w0ocwwsws-logs:/home/frappe/frappe-bench/logs'
+    networks:
+      as0swgowckg0cs8w0ocwwsws: null
+    labels:
+      - coolify.managed=true
+      - coolify.version=4.0.0-beta.360
+      - coolify.applicationId=39
+      - coolify.type=application
+      - coolify.name=websocket-as0swgowckg0cs8w0ocwwsws
+      - coolify.pullRequestId=0
+    restart: unless-stopped
+    container_name: websocket-as0swgowckg0cs8w0ocwwsws
+volumes:
+  as0swgowckg0cs8w0ocwwsws-sites:
+    name: as0swgowckg0cs8w0ocwwsws-sites
+  as0swgowckg0cs8w0ocwwsws-logs:
+    name: as0swgowckg0cs8w0ocwwsws-logs
+  as0swgowckg0cs8w0ocwwsws-db-data:
+    name: as0swgowckg0cs8w0ocwwsws-db-data
+  as0swgowckg0cs8w0ocwwsws-redis-queue-data:
+    name: as0swgowckg0cs8w0ocwwsws-redis-queue-data
+  as0swgowckg0cs8w0ocwwsws-redis-cache-data:
+    name: as0swgowckg0cs8w0ocwwsws-redis-cache-data
+networks:
+  as0swgowckg0cs8w0ocwwsws:
+    name: as0swgowckg0cs8w0ocwwsws
+    external: true
+configs: {  }
+secrets: {  }
